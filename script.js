@@ -17,30 +17,51 @@ var database = firebase.database();
 // Create map
 var map = L.map('map').setView([22.5726, 88.3639], 12);
 
-// Add OpenStreetMap
+// Add OpenStreetMap tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
 
+// Store markers to avoid duplicates
+let markers = [];
+
 // Read pollution data
 database.ref("locations").on("value", function(snapshot) {
+
+  // Remove old markers
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
   snapshot.forEach(function(child) {
     var data = child.val();
-    addMarker(data);
+    var marker = addMarker(data);
+    markers.push(marker);
   });
 });
 
-// Add colored marker
+// Add colored marker based on AQI
 function addMarker(data) {
   let color = "green";
-  if (data.aqi > 100) color = "red";
-  else if (data.aqi > 50) color = "orange";
+  let level = "Good";
 
-  var marker = L.circleMarker([data.lat, data.lng], {
+  if (data.aqi > 150) {
+    color = "red";
+    level = "Danger";
+  } else if (data.aqi > 100) {
+    color = "orange";
+    level = "Poor";
+  } else if (data.aqi > 50) {
+    color = "yellow";
+    level = "Moderate";
+  }
+
+  return L.circleMarker([data.lat, data.lng], {
     color: color,
     radius: 10,
     fillOpacity: 0.8
-  }).addTo(map);
-
-  marker.bindPopup("AQI: " + data.aqi);
+  }).addTo(map)
+    .bindPopup(
+      "<b>AQI:</b> " + data.aqi +
+      "<br><b>Status:</b> " + level
+    );
 }
