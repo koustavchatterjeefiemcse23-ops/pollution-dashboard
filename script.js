@@ -65,3 +65,5 @@ function addMarker(data) {
       "<br><b>Status:</b> " + level
     );
 }
+
+//done
